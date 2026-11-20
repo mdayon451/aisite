@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://mdayon451.github.io/aisite/sitemap.xml
