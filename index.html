@@ -275,6 +275,37 @@ section[id],.results-area{scroll-margin-top:90px}
 .lang-chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:30px;padding:7px 13px;font-size:12px;font-weight:600;transition:.2s}
 .lang-chip:hover{color:var(--primary);border-color:var(--primary)}
 .lang-chip.active{background:var(--gradient);color:#fff;border-color:transparent}
+/* ---- Chat layout ---- */
+.results-area{padding:20px 0 24px}
+.thread{display:flex;flex-direction:column;gap:16px}
+.msg{display:flex;gap:10px;min-width:0}
+.msg-user{justify-content:flex-end;scroll-margin-top:92px}
+.bubble{padding:13px 16px;border-radius:18px;font-size:14px;line-height:1.8;max-width:min(88%,720px);overflow-wrap:anywhere}
+.msg-user .bubble{background:var(--gradient);color:#fff;border-bottom-right-radius:6px;box-shadow:0 6px 16px #8069df33}
+.msg-ai .bubble{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:6px;box-shadow:var(--shadow);max-width:min(94%,780px)}
+.avatar{width:34px;height:34px;flex-shrink:0;border-radius:11px;background:var(--gradient);color:#fff;display:grid;place-items:center;font-size:16px}
+.bubble-tools{display:flex;gap:8px;margin-top:12px}
+.bubble-tools .copy-btn{margin-left:0}
+.msg-resources{margin-top:14px;display:grid;gap:8px}
+.msg-resources-title{font-size:11px;font-weight:800;color:var(--muted)}
+.msg-resources .resource-card{padding:11px}
+body.chatting .hero .eyebrow,
+body.chatting .hero h1,
+body.chatting .hero p,
+body.chatting .search-hint,
+body.chatting .quick-prompts{display:none}
+body.chatting .hero:before,body.chatting .hero:after{display:none}
+body.chatting main>section:not(.hero):not(.results-area),
+body.chatting footer{display:none}
+body.chatting main{display:flex;flex-direction:column;min-height:calc(100vh - 76px)}
+body.chatting .results-area{order:1;flex:1;width:min(860px,92%)}
+body.chatting .hero{order:2;position:sticky;bottom:0;z-index:40;padding:10px 0 calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)}
+body.chatting .search-wrap{margin-top:0;max-width:860px}
+body.chatting .lang-row{margin-top:8px;gap:6px;flex-wrap:nowrap}
+body.chatting .lang-row span{display:none}
+body.chatting .lang-chip{padding:6px 11px;font-size:11px}
+.close-results{white-space:nowrap}
+body.chatting .suggest-list{top:auto;bottom:calc(100% + 8px)}
 @media(prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
   html{scroll-behavior:auto}
@@ -376,33 +407,17 @@ section[id],.results-area{scroll-margin-top:90px}
     </div>
   </section>
 
-  <section class="container results-area" id="resultsArea">
+  <section class="container results-area" id="resultsArea" aria-live="polite">
     <div class="results-top">
       <div>
-        <h2 id="resultHeading">Your discovery</h2>
-        <p id="resultSubheading">Suggestions based on your search</p>
+        <h2 id="resultHeading">Chat with Suggo AI</h2>
+        <p id="resultSubheading">Ask anything. Your answer appears right here.</p>
       </div>
-      <button class="close-results" id="closeResults">✕ Close</button>
+      <button class="close-results" id="closeResults" type="button">＋ New chat</button>
     </div>
-
-    <div class="result-layout">
-      <div class="panel">
-        <div class="panel-title"><span class="mini-icon">✦</span> Suggo AI Insight <button class="copy-btn" id="copyAnswer" type="button">Copy</button></div>
-        <div class="answer-text" id="answerText"></div>
-        <div class="demo-note" id="demoNote">
-          This is an early frontend preview. AI-generated answers and live web search will be connected during backend development.
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span class="mini-icon">⌕</span> Suggested resources</div>
-        <div class="resource-list" id="resourceList"></div>
-      </div>
-    </div>
-
-    <div class="panel conversation" id="conversation">
-      <div class="panel-title"><span class="mini-icon">☷</span> Your search conversation</div>
-      <div id="conversationMessages"></div>
+    <div class="thread" id="conversationMessages"></div>
+    <div class="demo-note" id="demoNote">
+      This is an early preview. AI-generated answers will appear once the backend is connected.
     </div>
   </section>
 
@@ -535,7 +550,7 @@ section[id],.results-area{scroll-margin-top:90px}
    Leave as-is to run in offline demo mode. */
 const CONFIG = {
   SUPABASE_URL: "https://dgmjpgdyztqulhytasdx.supabase.co",
-  SUPABASE_KEY: "sb_publishable_lHTuVFV6T_gZZ5_pwctRBA_laXg5Wn8",
+  SUPABASE_KEY: "PASTE_YOUR_ANON_KEY",
   FUNCTION_NAME: "ai-search",
   TIMEOUT_MS: 20000
 };
@@ -546,9 +561,6 @@ const backendReady =
 
 const searchInput = $("searchInput");
 const resultsArea = $("resultsArea");
-const answerText = $("answerText");
-const resourceList = $("resourceList");
-const conversation = $("conversation");
 const conversationMessages = $("conversationMessages");
 
 $("year").textContent = new Date().getFullYear();
@@ -702,19 +714,8 @@ function findResources(query){
 function makeAnswer(query){
   const q = query.toLowerCase();
 
-  if(
-    q.includes("who developed") ||
-    q.includes("who created") ||
-    q.includes("who is the founder") ||
-    q.includes("developer of suggo") ||
-    q.includes("founder of suggo") ||
-    q.includes("আবিষ্কার") ||
-    q.includes("কে তৈরি") ||
-    q.includes("কে বানিয়েছে") ||
-    q.includes("প্রতিষ্ঠাতা") ||
-    q.includes("ডেভেলপার কে")
-  ){
-    return "Suggo AI-এর Founder & Developer হলেন Ayon।\n\nতিনি বাংলাদেশের একজন Diploma in Engineering শিক্ষার্থী। তাঁর বিভাগ Computer Technology / Computer Science।\n\nFounder profile: https://www.facebook.com/share/1ECib5JVXK/";
+  if(isFounderQuery(query)){
+    return founderAnswer(query);
   }
 
   if(q.includes("web development") || q.includes("website") || q.includes("ওয়েব ডেভেলপমেন্ট")){
@@ -737,11 +738,11 @@ function makeAnswer(query){
     return "Productivity বাড়ানোর জন্য:\n\n• প্রতিদিনের কাজের তালিকা তৈরি করো।\n• গুরুত্বপূর্ণ কাজ আগে শেষ করো।\n• বড় কাজকে ছোট ধাপে ভাগ করো।\n• কাজের মাঝে বিরতি রাখো।\n• দিনের শেষে অগ্রগতি পর্যালোচনা করো।\n\nনিচে কিছু সংগঠিতভাবে কাজ করার টুল দেওয়া হয়েছে।";
   }
 
-  return "তোমার অনুসন্ধান: “"+query+"”\n\nএই বিষয়টি নিয়ে আরও ভালোভাবে জানতে প্রথমে প্রাসঙ্গিক তথ্য ও নির্ভরযোগ্য রিসোর্স খুঁজে দেখা দরকার।\n\nSuggo AI-এর এই সংস্করণে তোমার অনুসন্ধানের সঙ্গে মিল থাকা কিছু ওয়েবসাইট ও টুল সাজিয়ে দেখানো হচ্ছে।\n\nআরও নির্দিষ্টভাবে প্রশ্ন করলে আরও কাজের পরামর্শ ও রিসোর্স পাওয়া যাবে।";
+  return "“"+query+"” নিয়ে আমার কাছে এই মুহূর্তে নির্দিষ্ট উত্তর নেই, কারণ লাইভ এআই সংযোগ বন্ধ আছে।\n\nএই প্রশ্নের উত্তরের জন্য তুমি এগুলো চেষ্টা করতে পারো:\n\n• ChatGPT বা Google Gemini-তে সরাসরি প্রশ্নটি করো।\n• Google-এ সার্চ করে নির্ভরযোগ্য সাইট দেখো।\n\nনিচে তোমার প্রশ্নের সঙ্গে মিল থাকা কিছু রিসোর্স দেওয়া হয়েছে।";
 }
 
-function renderResources(items){
-  resourceList.innerHTML = "";
+function renderResources(items,container){
+  container.innerHTML = "";
 
   items.forEach(item => {
     const card = document.createElement("div");
@@ -767,8 +768,22 @@ function renderResources(items){
 
     content.append(heading,description,link);
     card.append(icon,content);
-    resourceList.appendChild(card);
+    container.appendChild(card);
   });
+}
+
+function matchedResources(query){
+  const q = query.toLowerCase();
+  return resources.map(r => {
+    let score = 0;
+    r.keywords.forEach(k => {
+      const kw = k.toLowerCase();
+      const hit = new RegExp("(^|[^a-z0-9])"+kw.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"s?($|[^a-z0-9])").test(q);
+      if(hit) score += 3;
+    });
+    if(q.includes(r.name.toLowerCase())) score += 5;
+    return {r,score};
+  }).filter(x => x.score > 0).sort((a,b) => b.score-a.score).slice(0,3).map(x => x.r);
 }
 
 function apiHeaders(){
@@ -779,13 +794,13 @@ function apiHeaders(){
   };
 }
 
-async function askBackend(query){
+async function askBackend(query,history){
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
   try{
     const res = await fetch(
       CONFIG.SUPABASE_URL.replace(/\/$/,"")+"/functions/v1/"+CONFIG.FUNCTION_NAME,
-      {method:"POST",headers:apiHeaders(),body:JSON.stringify({query,lang:answerLang}),signal:controller.signal}
+      {method:"POST",headers:apiHeaders(),body:JSON.stringify({query,lang:answerLang,history:(history||[]).slice(-8)}),signal:controller.signal}
     );
     if(!res.ok) throw new Error("HTTP "+res.status);
     const data = await res.json();
@@ -842,34 +857,105 @@ function renderRich(el,text){
   });
 }
 
-function addConversation(query,answer){
-  const userLine = document.createElement("div");
-  userLine.className = "chat-line chat-user";
-  const userLabel = document.createElement("span");
-  userLabel.className = "chat-label";
-  userLabel.textContent = "You";
-  const userText = document.createElement("div");
-  userText.textContent = query;
-  userLine.append(userLabel,userText);
+let chatHistory = [];
 
-  const aiLine = document.createElement("div");
-  aiLine.className = "chat-line chat-ai";
-  const aiLabel = document.createElement("span");
-  aiLabel.className = "chat-label";
-  aiLabel.textContent = "Suggo AI";
-  const aiText = document.createElement("div");
-  aiText.className = "answer-text";
-  renderRich(aiText,answer);
-  aiLine.append(aiLabel,aiText);
-
-  conversationMessages.append(userLine,aiLine);
-  while(conversationMessages.children.length > 20){
-    conversationMessages.removeChild(conversationMessages.firstChild);
-  }
-  conversation.classList.add("show");
+function enterChatMode(){
+  document.body.classList.add("chatting");
+  resultsArea.classList.add("show");
+  searchInput.placeholder = "Ask anything…";
 }
 
-const FOUNDER_RE = /(who (developed|created|made|built)|founder|developer of suggo|আবিষ্কার|কে তৈরি|কে বানিয়েছে|প্রতিষ্ঠাতা|ডেভেলপার কে)/i;
+function addUserMessage(query){
+  const row = document.createElement("div");
+  row.className = "msg msg-user";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = query;
+  row.appendChild(bubble);
+  conversationMessages.appendChild(row);
+  return row;
+}
+
+function addAiMessage(){
+  const row = document.createElement("div");
+  row.className = "msg msg-ai";
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = "✦";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  const body = document.createElement("div");
+  body.className = "answer-text";
+  body.innerHTML = LOADER_HTML;
+  bubble.appendChild(body);
+  row.append(avatar,bubble);
+  conversationMessages.appendChild(row);
+  while(conversationMessages.children.length > 40){
+    conversationMessages.removeChild(conversationMessages.firstChild);
+  }
+  return {row,bubble,body};
+}
+
+function finishAiMessage(msg,answer,related){
+  renderRich(msg.body,answer);
+
+  if(related.length){
+    const wrap = document.createElement("div");
+    wrap.className = "msg-resources";
+    const title = document.createElement("div");
+    title.className = "msg-resources-title";
+    title.textContent = "Suggested resources";
+    const list = document.createElement("div");
+    list.className = "resource-list";
+    renderResources(related,list);
+    wrap.append(title,list);
+    msg.bubble.appendChild(wrap);
+  }
+
+  const tools = document.createElement("div");
+  tools.className = "bubble-tools";
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "copy-btn";
+  copy.textContent = "Copy";
+  copy.addEventListener("click",async () => {
+    try{
+      await navigator.clipboard.writeText(msg.body.innerText.trim());
+      showToast("Answer copied.");
+    }catch(e){
+      showToast("Couldn't copy. Select the text and copy it manually.");
+    }
+  });
+  tools.appendChild(copy);
+  msg.bubble.appendChild(tools);
+}
+
+const SELF_RE = /(suggo|sugo|সুগ্গো|সাগ্গো|\byou\b|\byour\b|\btumi\b|\btomar\b|\btomake\b|\btoma\b|তুমি|তোমা|আপনা)/i;
+const MAKER_RE = /(who (developed|created|made|built|owns|is behind)|creator|owner|malik|mallik|মালিক|ডেভেলপার কে|কে তৈরি|কে বানি|তৈরি করেছ|বানিয়েছ|বানাইছ|আবিষ্কার|toiri|tairi|banai|baniy|bananor|developer)/i;
+const FOUNDER_WORD_RE = /(founder|প্রতিষ্ঠাতা|ফাউন্ডার)/i;
+
+function isFounderQuery(query){
+  if(MAKER_RE.test(query) && SELF_RE.test(query)) return true;
+  const words = query.trim().split(/\s+/).length;
+  return FOUNDER_WORD_RE.test(query) && words <= 5 && !/\b(of|er|এর)\b/i.test(query) && !/(google|openai|chatgpt|microsoft|apple|meta|amazon|facebook)/i.test(query);
+}
+
+function founderAnswer(query){
+  let lang = answerLang;
+  if(lang === "auto"){
+    if(/[\u0980-\u09FF]/.test(query)) lang = "bn";
+    else if(/\b(ke|k|kon|toiri|tairi|banai\w*|baniy\w*|korcha|korche|korechhe|tomar|tomake|kivabe|ki|kar)\b/i.test(query)) lang = "banglish";
+    else lang = "en";
+  }
+  const link = "Founder profile: https://www.facebook.com/share/1ECib5JVXK/";
+  if(lang === "en"){
+    return "Suggo AI was created by Ayon, its Founder & Developer.\n\nHe is a Diploma in Engineering student from Bangladesh, studying Computer Technology / Computer Science.\n\n"+link;
+  }
+  if(lang === "banglish"){
+    return "Suggo AI-er Founder & Developer holen Ayon.\n\nTini Bangladesh-er ekjon Diploma in Engineering shikkharthi. Tar bibhag Computer Technology / Computer Science.\n\n"+link;
+  }
+  return "Suggo AI-এর Founder & Developer হলেন Ayon।\n\nতিনি বাংলাদেশের একজন Diploma in Engineering শিক্ষার্থী। তাঁর বিভাগ Computer Technology / Computer Science।\n\n"+link;
+}
 const LOADER_HTML = '<div class="loader" role="status" aria-label="Thinking"><span></span><span></span><span></span></div>';
 let isBusy = false;
 
@@ -877,51 +963,56 @@ function setBusy(busy){
   isBusy = busy;
   const btn = $("searchBtn");
   btn.disabled = busy;
-  btn.textContent = busy ? "Exploring…" : "Explore ✦";
+  btn.textContent = busy ? "Thinking…" : (document.body.classList.contains("chatting") ? "Send ✦" : "Explore ✦");
 }
 
 async function performSearch(value){
   const query = value.trim();
 
   if(!query){
-    showToast("Please enter something to explore.");
+    showToast("Please type something to ask.");
     searchInput.focus();
     return;
   }
   if(isBusy) return;
 
   hideSuggestions();
+  searchInput.value = "";
   searchInput.blur();
   setBusy(true);
+  enterChatMode();
 
-  $("resultHeading").textContent = "Discovery results";
-  $("resultSubheading").textContent = "Exploring: "+query;
-
-  renderResources(findResources(query));
-  answerText.classList.remove("rich");
-  answerText.innerHTML = LOADER_HTML;
-
-  resultsArea.classList.add("show");
-  resultsArea.scrollIntoView({behavior:"smooth",block:"start"});
+  const userRow = addUserMessage(query);
+  const ai = addAiMessage();
+  userRow.scrollIntoView({behavior:"smooth",block:"start"});
 
   saveHistory(query);
   logSearch(query);
 
   try{
     let answer;
-    if(backendReady && !FOUNDER_RE.test(query)){
+    if(isFounderQuery(query)){
+      answer = founderAnswer(query);
+    }else if(backendReady){
       try{
-        answer = await askBackend(query);
-      }catch(err){
-        console.warn("Suggo AI backend error:",err);
-        answer = makeAnswer(query);
-        showToast("Live AI is unavailable right now. Showing a built-in answer.");
+        answer = await askBackend(query,chatHistory);
+      }catch(err1){
+        console.warn("Suggo AI retrying after error:",err1);
+        try{
+          answer = await askBackend(query,chatHistory);
+        }catch(err2){
+          console.warn("Suggo AI backend error:",err2);
+          answer = makeAnswer(query);
+          showToast("Live AI is unavailable right now. Showing a built-in answer.");
+        }
       }
     }else{
       answer = makeAnswer(query);
     }
-    renderRich(answerText,answer);
-    addConversation(query,answer);
+
+    finishAiMessage(ai,answer,matchedResources(query));
+    chatHistory.push({role:"user",text:query},{role:"ai",text:answer});
+    chatHistory = chatHistory.slice(-12);
   }finally{
     setBusy(false);
   }
@@ -1041,16 +1132,6 @@ $("searchBtn").addEventListener("click",() => {
   performSearch(searchInput.value);
 });
 
-$("copyAnswer").addEventListener("click",async () => {
-  const text = answerText.innerText.trim();
-  if(!text) return;
-  try{
-    await navigator.clipboard.writeText(text);
-    showToast("Answer copied.");
-  }catch(e){
-    showToast("Couldn't copy. Select the text and copy it manually.");
-  }
-});
 
 if(backendReady) $("demoNote").style.display = "none";
 
@@ -1091,11 +1172,20 @@ document.querySelectorAll(".category").forEach(category => {
   });
 });
 
-$("closeResults").addEventListener("click",() => {
+function newChat(){
+  document.body.classList.remove("chatting");
   resultsArea.classList.remove("show");
-  conversation.classList.remove("show");
   conversationMessages.innerHTML = "";
-  document.querySelector(".hero").scrollIntoView({behavior:"smooth"});
+  chatHistory = [];
+  searchInput.value = "";
+  searchInput.placeholder = "What are you looking for today?";
+  setBusy(false);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+$("closeResults").addEventListener("click",newChat);
+document.querySelector(".logo").addEventListener("click",event => {
+  event.preventDefault();
+  newChat();
 });
 
 $("themeBtn").addEventListener("click",() => {
