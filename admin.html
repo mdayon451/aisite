@@ -145,6 +145,9 @@ button,input,select{font:inherit;color:inherit}button{cursor:pointer}
     <div class="card"><h3>AI instructions (live)</h3>
       <p style="font-size:12px;color:var(--mu);margin-bottom:8px;line-height:1.6">Extra rules the AI follows from the next question on, no redeploy needed. Example: “Always end with one follow-up question.”</p>
       <textarea class="field" id="aiExtra" rows="6" maxlength="4000" style="resize:vertical" placeholder="Write extra instructions for the AI here…"></textarea>
+      <p style="font-size:12px;color:var(--mu);margin:12px 0 6px;line-height:1.6">AI model layers: if the first model runs out of quota, the next one answers. Comma separated, first = tried first. Leave empty for the built-in order.</p>
+      <input class="field" id="aiModels" placeholder="Chat models, e.g. gemini-3.5-flash-lite, gemini-3.8-flash, gemini-2.5-flash" style="margin-bottom:8px">
+      <input class="field" id="aiModelsCode" placeholder="Coding models (strongest first)">
       <div class="bar" style="margin:10px 0 0"><button class="btn sm" id="aiExtraSave" type="button">Save</button></div>
     </div>
     <div class="card"><h3>Blocked list</h3>
@@ -340,11 +343,16 @@ $("blockBtn").addEventListener("click",()=>{ if(!curGroup) return; const k=curGr
 $("blockAdd").addEventListener("click",()=>{ const v=$("blockInput").value.trim().toLowerCase(); if(v){ blockKey(v); $("blockInput").value=""; } });
 
 async function loadExtra(){
-  try{ const r=await fetch(CFG.URL+"/rest/v1/app_settings?select=value&key=eq.ai_extra",{headers:H()}); if(r.ok){ const d=await r.json(); $("aiExtra").value=(d[0]&&d[0].value)||""; } }catch(e){}
+  try{
+    const r=await fetch(CFG.URL+"/rest/v1/app_settings?select=key,value&key=in.(ai_extra,ai_models,ai_models_code)",{headers:H()});
+    if(r.ok){ const d=await r.json(); const m={}; d.forEach(x=>{ m[x.key]=x.value||""; });
+      $("aiExtra").value=m.ai_extra||""; $("aiModels").value=m.ai_models||""; $("aiModelsCode").value=m.ai_models_code||""; }
+  }catch(e){}
 }
 $("aiExtraSave").addEventListener("click",async()=>{
   try{
-    const r=await fetch(CFG.URL+"/rest/v1/app_settings?on_conflict=key",{method:"POST",headers:{...H(),Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({key:"ai_extra",value:$("aiExtra").value.slice(0,4000)})});
+    const rows=[{key:"ai_extra",value:$("aiExtra").value.slice(0,4000)},{key:"ai_models",value:$("aiModels").value.trim().slice(0,400)},{key:"ai_models_code",value:$("aiModelsCode").value.trim().slice(0,400)}];
+    const r=await fetch(CFG.URL+"/rest/v1/app_settings?on_conflict=key",{method:"POST",headers:{...H(),Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(rows)});
     toast(r.ok?"Saved. The AI uses it within a minute.":"Save failed ("+r.status+"). Run the new SQL first.");
   }catch(e){ toast("Save failed."); }
 });

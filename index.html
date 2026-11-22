@@ -1266,19 +1266,72 @@ document.querySelectorAll(".tool-chip").forEach(chip => {
   });
 });
 
-async function askBackend(query,history,files){
+/* Web search makes answers slower, so it is used only when it really helps (facts, news, people). */
+const NO_SEARCH_RE = /(\bsolve\b|\bcalculate\b|equation|integral|derivative|সমাধান|হিসাব\s*কর|সমীকরণ|\btranslate\b|অনুবাদ|\bsummari[sz]e\b|সারাংশ|\brewrite\b|proofread|grammar|ব্যাকরণ|দরখাস্ত|\bessay\b|রচনা|\bpoem\b|কবিতা|\bstory\b|গল্প|\bquiz\b|\bmcq\b|কুইজ)/i;
+function wantSearch(q,live){
+  if(live) return false;                       /* live data (weather, prayer, Quran, rates, proof) is already supplied */
+  if(toolMode) return false;
+  if(CODE_RE.test(q) || NO_SEARCH_RE.test(q)) return false;
+  return q.trim().length >= 12;                /* greetings and very short messages */
+}
+
+/* keeps room under the newest message so it can sit at the top of the screen, like a chat app */
+let chatSpacer = null;
+function updateSpacer(userRow,aiRow){
+  try{
+    if(!chatSpacer){ chatSpacer = document.createElement("div"); chatSpacer.id = "chatSpacer"; chatSpacer.setAttribute("aria-hidden","true"); conversationMessages.after(chatSpacer); }
+    const used = aiRow.getBoundingClientRect().bottom - userRow.getBoundingClientRect().top;
+    chatSpacer.style.height = Math.max(0,Math.round(window.innerHeight - 92 - 120 - used)) + "px";
+  }catch(e){}
+}
+function resetSpacer(){ if(chatSpacer) chatSpacer.style.height = "0px"; }
+
+/* reads the answer as it arrives and paints it live (the first words show up in about a second) */
+async function readAnswerStream(res,ai){
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", full = "", queued = false;
+  const paint = () => {
+    queued = false;
+    if(ai && ai.body){ renderRich(ai.body,full); if(ai.userRow && ai.row) updateSpacer(ai.userRow,ai.row); }
+  };
+  for(;;){
+    const r = await reader.read();
+    if(r.value) buf += dec.decode(r.value,{stream:true}).replace(/\r\n/g,"\n");
+    let i = buf.indexOf("\n\n");
+    while(i >= 0){
+      const ev = buf.slice(0,i); buf = buf.slice(i + 2);
+      const line = ev.split("\n").find(l => l.indexOf("data:") === 0);
+      if(line){
+        let j = null;
+        try{ j = JSON.parse(line.slice(5).trim()); }catch(e){}
+        if(j){
+          if(j.t){ full += j.t; if(!queued){ queued = true; setTimeout(paint,60); } }
+          if(j.error && !full) throw new Error(j.error);
+        }
+      }
+      i = buf.indexOf("\n\n");
+    }
+    if(r.done) break;
+  }
+  if(!full) throw new Error("Empty response");
+  return full;
+}
+
+async function askBackend(query,history,files,ai){
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CODE_RE.test(query) ? 120000 : 45000);
   try{
     const [fxLine,wxLine,prLine,qrLine,pfLine] = await Promise.all([getRatesLine(query),getWeatherLine(query),getPrayerLine(query),getQuranLine(query),getProofLine(query)]);
+    const live = fxLine + wxLine + prLine + qrLine + pfLine;
     const hdr = apiHeaders();
     const utok = await freshToken();
     if(utok) hdr["x-user-token"] = utok;
     const res = await fetch(
       CONFIG.SUPABASE_URL.replace(/\/$/,"")+"/functions/v1/"+CONFIG.FUNCTION_NAME,
-      {method:"POST",headers:hdr,body:JSON.stringify({uid:getUid(),mode:(CODE_RE.test(query) ? "code" : "chat"),query:buildInstructions((files||[]).some(f => f.mime && f.mime.indexOf("image") === 0),query)+fxLine+wxLine+prLine+qrLine+pfLine+"[Today's date: "+todayStr()+"] "+query,lang:(answerLang === "both" ? "auto" : answerLang),history:(history||[]).slice(-8),today:todayStr(),files:(files||[]).map(f => ({mime:f.mime,data:f.data}))}),signal:controller.signal}
+      {method:"POST",headers:hdr,body:JSON.stringify({uid:getUid(),mode:(CODE_RE.test(query) ? "code" : "chat"),search:wantSearch(query,live),query:buildInstructions((files||[]).some(f => f.mime && f.mime.indexOf("image") === 0),query)+fxLine+wxLine+prLine+qrLine+pfLine+"[Today's date: "+todayStr()+"] "+query,lang:(answerLang === "both" ? "auto" : answerLang),history:(history||[]).slice(-8),today:todayStr(),files:(files||[]).map(f => ({mime:f.mime,data:f.data}))}),signal:controller.signal}
     );
     if(!res.ok) throw new Error("HTTP "+res.status);
+    if((res.headers.get("content-type") || "").indexOf("text/event-stream") >= 0 && res.body) return await readAnswerStream(res,ai);
     const data = await res.json();
     if(!data.text) throw new Error(data.error || "Empty response");
     return data.text;
@@ -1329,7 +1382,7 @@ function logSearch(query){
 
 /* Safe rich-text renderer: paragraphs, lists, headings, **bold**, `code` and fenced code blocks (no innerHTML) */
 function inlineFormat(parent,text){
-  text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).forEach(part => {
+  text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s)<>]+)/g).forEach(part => {
     if(/^\*\*[^*]+\*\*$/.test(part)){
       const b = document.createElement("strong");
       b.textContent = part.slice(2,-2);
@@ -1339,6 +1392,15 @@ function inlineFormat(parent,text){
       c.className = "inl";
       c.textContent = part.slice(1,-1);
       parent.appendChild(c);
+    }else if(/^\[[^\]]+\]\(https?:\/\/[^)\s]+\)$/.test(part)){
+      const m = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      const a = document.createElement("a");
+      a.href = m[2]; a.textContent = m[1]; a.target = "_blank"; a.rel = "noopener noreferrer";
+      parent.appendChild(a);
+    }else if(/^https?:\/\/\S+$/.test(part)){
+      const a = document.createElement("a");
+      a.href = part; a.textContent = part; a.target = "_blank"; a.rel = "noopener noreferrer";
+      parent.appendChild(a);
     }else if(part){
       parent.appendChild(document.createTextNode(part));
     }
@@ -1790,6 +1852,8 @@ async function performSearch(value){
   const userRow = addUserMessage(query,files);
   const ai = addAiMessage();
   ai.question = query;
+  ai.userRow = userRow;
+  updateSpacer(userRow,ai.row);
   userRow.scrollIntoView({behavior:"smooth",block:"start"});
 
   saveHistory(query);
@@ -1812,11 +1876,11 @@ async function performSearch(value){
       answer = local;
     }else if(backendReady){
       try{
-        answer = await askBackend(aiQuery,chatHistory,binaryFiles);
+        answer = await askBackend(aiQuery,chatHistory,binaryFiles,ai);
       }catch(err1){
         console.warn("Suggo AI retrying after error:",err1);
         try{
-          answer = await askBackend(aiQuery,chatHistory,binaryFiles);
+          answer = await askBackend(aiQuery,chatHistory,binaryFiles,ai);
         }catch(err2){
           console.warn("Suggo AI backend error:",err2);
           if(files.length){
@@ -2206,6 +2270,7 @@ document.querySelectorAll(".category").forEach(category => {
 });
 
 function newChat(){
+  if(typeof resetSpacer === "function") resetSpacer();
   if(typeof stopVoice === "function") stopVoice(true);
   currentChatId = null;
   logChatId = null;
@@ -2347,6 +2412,7 @@ function persistChat(){
 }
 
 function openChat(id){
+  if(typeof resetSpacer === "function") resetSpacer();
   if(isBusy){ showToast("Please wait for the answer to finish."); return; }
   const saved = lsGet(CHAT_PREFIX + id,null);
   if(!saved){
