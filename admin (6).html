@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Suggo AI — Admin</title>
+<style>
+:root{--bg:#f8f7ff;--sf:#fff;--sf2:#f1efff;--tx:#211d35;--mu:#77738c;--pr:#7660d8;--bd:#e9e5f6;--rd:#e5484d;--grad:linear-gradient(135deg,#7760dc,#a18af7)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#11101b;--sf:#1b1928;--sf2:#252139;--tx:#f4f0ff;--mu:#aaa4c0;--pr:#a18af7;--bd:#302b43}}
+:root[data-theme=dark]{--bg:#11101b;--sf:#1b1928;--sf2:#252139;--tx:#f4f0ff;--mu:#aaa4c0;--pr:#a18af7;--bd:#302b43}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Bengali",sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;padding-top:env(safe-area-inset-top,0)}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+.hide{display:none!important}
+.field{width:100%;padding:12px 14px;border:1px solid var(--bd);background:var(--sf);border-radius:12px;outline:0}
+.field:focus{border-color:var(--pr)}
+.btn{background:var(--grad);color:#fff;border:0;border-radius:12px;padding:12px 16px;font-weight:700}
+.btn.sm{padding:8px 13px;font-size:13px}
+.btn.gh{background:var(--sf);color:var(--tx);border:1px solid var(--bd)}
+.btn.dg{background:var(--rd)}
+.login{max-width:360px;margin:12vh auto;padding:0 20px}
+.login h1{font-size:26px;margin-bottom:6px}.login p{color:var(--mu);font-size:14px;margin-bottom:20px}
+.login .field{margin-bottom:12px}.login .btn{width:100%}
+.err{color:var(--rd);font-size:13px;margin-top:10px;min-height:18px}
+.wrap{max-width:920px;margin:auto;padding:12px 14px calc(30px + env(safe-area-inset-bottom,0))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.top h1{font-size:19px}.top small{color:var(--mu);font-size:11px;display:block}
+.acts{display:flex;gap:6px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:5}
+.tab{border:1px solid var(--bd);background:var(--sf);border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;white-space:nowrap}
+.tab.on{background:var(--grad);color:#fff;border-color:transparent}
+.bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.bar .field{flex:1;min-width:130px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px 6px;text-align:center}
+.stat b{display:block;font-size:21px;color:var(--pr)}.stat span{font-size:11px;color:var(--mu)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h3{font-size:14px;margin-bottom:10px}
+.chart{display:flex;align-items:flex-end;gap:4px;height:120px}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:9px;color:var(--mu);gap:3px}
+.col i{display:block;width:100%;background:var(--grad);border-radius:4px 4px 0 0;min-height:2px}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:block;width:100%;text-align:left;background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px 14px}
+.item:hover{border-color:var(--pr)}
+.item .t{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .m{font-size:12px;color:var(--mu);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border:0}.row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row span:last-child{color:var(--mu);flex-shrink:0}
+.set{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.set:last-child{border:0}.set small{display:block;color:var(--mu);font-size:12px}.set select{width:auto;padding:8px 10px}
+.empty{color:var(--mu);font-size:14px;padding:24px 10px;text-align:center;line-height:1.7}
+.thread{position:fixed;inset:0;background:var(--bg);z-index:10;overflow-y:auto;padding-top:env(safe-area-inset-top,0)}
+.thead{position:sticky;top:0;background:var(--sf);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.thead .btn.sm{padding:7px 10px;font-size:12px}
+.thead .info{min-width:0;flex:1}.thead b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.thead small{color:var(--mu);font-size:12px}
+.msgs{max-width:760px;margin:auto;padding:14px 14px 40px}
+.bub{padding:11px 14px;border-radius:14px;margin:10px 0;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.bub.u{background:var(--sf2);margin-left:12%}.bub.a{background:var(--sf);border:1px solid var(--bd);margin-right:8%}
+.bub small{display:block;color:var(--mu);font-size:11px;margin-bottom:4px;font-weight:700}
+.hint{font-size:12px;color:var(--mu);margin:8px 0;line-height:1.6}
+.sqlbox{font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;resize:vertical;min-height:120px;white-space:pre}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th,.tbl td{border:1px solid var(--bd);padding:5px 8px;text-align:left;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.tbl th{background:var(--sf2)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;z-index:30;max-width:90%}
+</style>
+</head>
+<body>
+
+<section class="login" id="loginView">
+  <h1>Suggo AI Admin</h1>
+  <p>Sign in with your admin account.</p>
+  <input class="field" id="email" type="email" placeholder="Email" autocomplete="username">
+  <input class="field" id="pass" type="password" placeholder="Password" autocomplete="current-password">
+  <button class="btn" id="loginBtn" type="button">Sign in</button>
+  <div class="err" id="loginErr"></div>
+</section>
+
+<main class="wrap hide" id="appView">
+  <div class="top">
+    <div><h1>Suggo AI Admin</h1><small id="upd"></small></div>
+    <div class="acts">
+      <button class="btn sm gh" id="refreshBtn" type="button">Refresh</button>
+      <button class="btn sm gh" id="logoutBtn" type="button">Sign out</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-t="overview" type="button">Overview</button>
+    <button class="tab" data-t="chats" type="button">Chats</button>
+    <button class="tab" data-t="users" type="button">Users</button>
+    <button class="tab" data-t="inbox" type="button">Inbox <span id="inboxBadge"></span></button>
+    <button class="tab" data-t="feedback" type="button">Feedback</button>
+    <button class="tab" data-t="settings" type="button">Settings</button>
+  </div>
+  <div class="card hide" id="banner" style="border-color:var(--rd);font-size:13px;line-height:1.7"></div>
+  <div class="bar" id="rangeBar">
+    <select class="field" id="range">
+      <option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="0">All time</option>
+    </select>
+  </div>
+
+  <div id="p-overview">
+    <div class="stats">
+      <div class="stat"><b id="sChats">0</b><span>Chats</span></div>
+      <div class="stat"><b id="sMsgs">0</b><span>Messages</span></div>
+      <div class="stat"><b id="sUsers">0</b><span>Users</span></div>
+      <div class="stat"><b id="sToday">0</b><span>Messages today</span></div>
+      <div class="stat"><b id="sAvg">0</b><span>Msgs / chat</span></div>
+      <div class="stat"><b id="sActive">0</b><span>Active today</span></div>
+    </div>
+    <div class="card"><h3>Messages — last 14 days</h3><div class="chart" id="chart"></div></div>
+    <div class="card"><h3>Visitors by country</h3><div id="topC"></div></div>
+    <div class="card"><h3>Most asked questions</h3><div id="topQ"></div></div>
+    <div class="card"><h3>Latest questions</h3><div id="latest"></div></div>
+  </div>
+
+  <div id="p-chats" class="hide">
+    <div class="bar">
+      <input class="field" id="searchBox" type="search" placeholder="Search questions, answers or user id…">
+      <select class="field" id="sort" style="flex:0 0 auto;min-width:0"><option value="new">Newest</option><option value="old">Oldest</option><option value="long">Longest</option></select>
+    </div>
+    <div class="list" id="chatList"></div>
+  </div>
+
+  <div id="p-users" class="hide"><div class="list" id="userList"></div></div>
+
+  <div id="p-inbox" class="hide"><div class="list" id="inboxList"></div></div>
+
+  <div id="p-feedback" class="hide">
+    <div class="bar"><div class="field" id="fbStats" style="flex:1">–</div>
+      <select class="field" id="fbFilter" style="flex:0 0 auto"><option value="all">All</option><option value="down">👎 only</option><option value="up">👍 only</option></select></div>
+    <div class="list" id="fbList"></div>
+  </div>
+
+  <div id="p-settings" class="hide">
+    <div class="card">
+      <div class="set"><div>Theme<small>Appearance of this page</small></div>
+        <select class="field" id="setTheme"><option value="auto">Auto</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+      <div class="set"><div>Auto refresh<small>Reload data automatically</small></div>
+        <select class="field" id="setAuto"><option value="0">Off</option><option value="30">30 sec</option><option value="60">1 min</option><option value="300">5 min</option></select></div>
+    </div>
+    <div class="card"><h3>Export</h3>
+      <div class="bar" style="margin:0"><button class="btn sm gh" id="expCsv" type="button">Download CSV</button><button class="btn sm gh" id="expJson" type="button">Download JSON</button></div>
+    </div>
+    <div class="card"><h3>Connection</h3>
+      <div class="row"><span>Account</span><span id="iMail">–</span></div>
+      <div class="row"><span>Messages loaded</span><span id="iRows">0</span></div>
+      <div class="row"><span>Last updated</span><span id="iTime">–</span></div>
+    </div>
+    <div class="card"><h3>AI instructions (live)</h3>
+      <p style="font-size:12px;color:var(--mu);margin-bottom:8px;line-height:1.6">Extra rules the AI follows from the next question on, no redeploy needed. Example: “Always end with one follow-up question.”</p>
+      <textarea class="field" id="aiExtra" rows="6" maxlength="4000" style="resize:vertical" placeholder="Write extra instructions for the AI here…"></textarea>
+      <p style="font-size:12px;color:var(--mu);margin:12px 0 6px;line-height:1.6">AI model layers: if the first model runs out of quota, the next one answers. Comma separated, first = tried first. Leave empty for the built-in order.</p>
+      <input class="field" id="aiModels" placeholder="Chat models, e.g. gemini-3.5-flash-lite, gemini-3.8-flash, gemini-2.5-flash" style="margin-bottom:8px">
+      <input class="field" id="aiModelsCode" placeholder="Coding models (strongest first)" style="margin-bottom:8px">
+      <p style="font-size:12px;color:var(--mu);margin:12px 0 6px;line-height:1.6">Backup AI chain (used by the <b>ai-search</b> function when every model above is out of quota). Format <b>provider:model</b>, comma separated, first = tried first. Providers: gemini, groq, openrouter, cerebras, mistral. Leave empty for the built-in order.</p>
+      <input class="field" id="aiFallbacks" placeholder="e.g. groq:llama-3.3-70b-versatile, cerebras:llama-3.3-70b, openrouter:meta-llama/llama-3.3-70b-instruct:free">
+      <div class="bar" style="margin:10px 0 0"><button class="btn sm" id="aiExtraSave" type="button">Save</button></div>
+    </div>
+    <div class="card"><h3>Blocked list</h3>
+      <div id="blockList"></div>
+      <div class="bar" style="margin:10px 0 0"><input class="field" id="blockInput" placeholder="email, user id or IP to block"><button class="btn sm gh" id="blockAdd" type="button">Block</button></div>
+    </div>
+    <div class="card"><h3>Limits &amp; access</h3>
+      <p class="hint">Change how much each kind of visitor can use the AI. Applies within a minute, no redeploy. Leave a box empty to use the default.</p>
+      <div class="set"><div>AI answers per day: guests<small>Not signed in (default 40)</small></div><input class="field" id="limGuest" type="number" min="1" placeholder="40" style="width:100px"></div>
+      <div class="set"><div>AI answers per day: signed-in users<small>Signed in with Google (default 120)</small></div><input class="field" id="limUser" type="number" min="1" placeholder="120" style="width:100px"></div>
+      <div class="set"><div>AI speed<small>Fast = quick models first. Best = strongest first (slower).</small></div><select class="field" id="aiSpeed" style="width:150px"><option value="fast">Fast</option><option value="best">Best</option><option value="list">As listed</option></select></div>
+      <p class="hint">Maintenance message: when filled, everyone except you sees this text instead of AI answers. Empty = AI is on.</p>
+      <input class="field" id="maint" placeholder="e.g. We are updating Suggo AI. Please try again in 10 minutes.">
+      <div class="bar" style="margin:10px 0 0"><button class="btn sm" id="limSave" type="button">Save</button></div>
+    </div>
+    <div class="card"><h3>User names</h3>
+      <p class="hint">Give any user a name you will remember. It shows in Users and Chats (marked ★) and can be searched. Only you see it. You can also tap “✎ Name” on a user or inside a chat.</p>
+      <div id="aliasList"></div>
+      <div class="bar" style="margin:10px 0 0"><input class="field" id="aliasKey" placeholder="email or guest user id"><input class="field" id="aliasName" placeholder="name to remember" maxlength="60"><button class="btn sm gh" id="aliasAdd" type="button">Add</button></div>
+    </div>
+    <div class="card"><h3>Special people (AI)</h3>
+      <p class="hint">People the AI should recognise when they sign in with that exact Google account. They also get no daily limit. Write how the AI should treat them, for example: “She is my friend Rima. Talk warmly and call her Rima.” The AI never accepts a person’s own claim, only the verified email.</p>
+      <div id="peopleList"></div>
+      <div class="bar" style="margin:10px 0 0;flex-direction:column;align-items:stretch"><input class="field" id="peopleEmail" placeholder="their Google email"><textarea class="field" id="peopleText" rows="3" maxlength="1500" placeholder="How the AI should treat them" style="resize:vertical"></textarea><button class="btn sm" id="peopleAdd" type="button">Save person</button></div>
+    </div>
+    <div class="card"><h3>SQL console</h3>
+      <p class="hint">Runs SQL on your live Supabase database through the <b>admin-sql</b> function (only your admin account can use it). The result of the last statement is shown. Tick “Test only” to run it and then undo every change.</p>
+      <select class="field" id="sqlPreset" style="margin-bottom:8px"><option value="">Quick examples…</option><option value="tables">Tables and row counts</option><option value="columns">Columns of every table</option><option value="policies">Security policies</option><option value="triggers">Triggers (Telegram alerts)</option></select>
+      <textarea class="field sqlbox" id="sqlBox" spellcheck="false" placeholder="select * from app_settings;"></textarea>
+      <div class="bar" style="margin:10px 0 0;align-items:center"><label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="sqlDry"> Test only (undo changes)</label><button class="btn sm" id="sqlRun" type="button" style="margin-left:auto">Run SQL</button></div>
+      <div id="sqlOut" style="margin-top:10px"></div>
+    </div>
+    <div class="card"><h3>AI providers (API keys)</h3>
+      <p class="hint">Add another AI here and the site can use it with no code change. Works with any <b>OpenAI-compatible</b> API (OpenAI, Groq, OpenRouter, DeepSeek, Mistral, Together, xAI and more). Keys are saved on the server only and are never shown again. Your Gemini key stays in the Supabase secret <b>GEMINI_API_KEY</b>.</p>
+      <p class="hint"><b>Main</b> = tried first for every answer (no Google web search). <b>Backup</b> = used only if Gemini fails. <b>Off</b> = saved but not used. Images and PDFs always go to Gemini.</p>
+      <div id="provList"></div><div id="provStatus" class="hint"></div>
+      <div class="bar" style="margin:10px 0 0;flex-direction:column;align-items:stretch">
+        <select class="field" id="provPreset"><option value="">Quick fill…</option><option value="openai">OpenAI</option><option value="groq">Groq</option><option value="openrouter">OpenRouter</option><option value="deepseek">DeepSeek</option><option value="mistral">Mistral</option><option value="together">Together</option><option value="xai">xAI</option><option value="geminiCompat">Gemini (extra key)</option></select>
+        <input class="field" id="provName" placeholder="Name, for example Groq" maxlength="40">
+        <input class="field" id="provUrl" placeholder="Base URL, for example https://api.groq.com/openai/v1">
+        <input class="field" id="provModel" placeholder="Model name (copy it from the provider's docs)">
+        <input class="field" id="provKey" type="password" autocomplete="off" placeholder="API key (leave empty to keep the saved key)">
+        <select class="field" id="provMode"><option value="backup">Backup (only if Gemini fails)</option><option value="main">Main (try first)</option><option value="off">Off</option></select>
+        <div style="display:flex;gap:8px"><button class="btn sm" id="provSave" type="button">Save provider</button><button class="btn sm gh" id="provClear" type="button">Clear form</button></div>
+      </div>
+    </div>
+    <div class="card"><h3>Danger zone</h3>
+      <p style="font-size:12px;color:var(--mu);margin-bottom:10px;line-height:1.6">Deleting needs the “admin delete” SQL policy (see instructions). Deleted logs cannot be restored.</p>
+      <button class="btn sm dg" id="delAll" type="button">Delete ALL logs</button>
+    </div>
+  </div>
+</main>
+
+<section class="thread hide" id="threadView">
+  <div class="thead">
+    <button class="btn sm gh" id="backBtn" type="button">← Back</button>
+    <div class="info"><b id="tTitle"></b><small id="tMeta"></small></div>
+    <button class="btn sm gh" id="copyBtn" type="button">Copy</button>
+    <button class="btn sm gh" id="nameBtn" type="button">✎ Name</button>
+    <button class="btn sm gh" id="blockBtn" type="button">Block</button>
+    <button class="btn sm dg" id="delBtn" type="button">Delete</button>
+  </div>
+  <div class="msgs" id="tMsgs"></div>
+</section>
+<div class="toast hide" id="toast"></div>
+
+<script>
+/* shows any page error on the login screen, so problems are easy to spot */
+window.addEventListener("error",function(e){var b=document.getElementById("loginErr");if(b)b.textContent="Page error: "+e.message+" (line "+e.lineno+")";});
+</script>
+<script>
+/* Paste the same Project URL and anon key you use in index.html */
+const CFG = { URL:"https://dgmjpgdyztqulhytasdx.supabase.co", KEY:"sb_publishable_lHTuVFV6T_gZZ5_pwctRBA_laXg5Wn8" };
+const $ = id => document.getElementById(id);
+let session=null, rows=[], groups=[], timer=null, curGroup=null, email="";
+const S = {theme:"auto", auto:"0", range:"7", tab:"overview"};
+try{ Object.assign(S, JSON.parse(localStorage.getItem("suggoAdminSet")||"{}")); session = JSON.parse(sessionStorage.getItem("suggoAdmin")||"null"); }catch(e){}
+function saveS(){ try{ localStorage.setItem("suggoAdminSet",JSON.stringify(S)); }catch(e){} }
+function applyTheme(){ if(S.theme==="auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme",S.theme); }
+function banner(m){ const b=$("banner"); b.textContent=m; b.classList.toggle("hide",!m); }
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.remove("hide"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.add("hide"),3000); }
+function cname(c){ if(!c) return ""; try{ return new Intl.DisplayNames(["en"],{type:"region"}).of(c.toUpperCase()) || c; }catch(e){ return c; } }
+function fmt(t){ return new Date(t).toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}); }
+function el(tag,cls,text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!==undefined) e.textContent=text; return e; }
+const H = () => ({apikey:CFG.KEY, Authorization:"Bearer "+session.access, "Content-Type":"application/json"});
+
+/* ---- auth ---- */
+function saveSession(d){
+  session={access:d.access_token,refresh:d.refresh_token};
+  email=(d.user&&d.user.email)||email;
+  try{ sessionStorage.setItem("suggoAdmin",JSON.stringify(session)); if(email) sessionStorage.setItem("suggoAdminMail",email); }catch(e){}
+}
+async function authCall(grant,body){
+  const r=await fetch(CFG.URL+"/auth/v1/token?grant_type="+grant,{method:"POST",headers:{apikey:CFG.KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json(); if(!r.ok) throw new Error(d.error_description||d.msg||"Sign in failed"); saveSession(d);
+}
+async function refreshToken(){ if(!session||!session.refresh) return false; try{ await authCall("refresh_token",{refresh_token:session.refresh}); return true; }catch(e){ return false; } }
+function logout(){
+  session=null; rows=[]; clearInterval(timer);
+  try{ sessionStorage.removeItem("suggoAdmin"); }catch(e){}
+  $("appView").classList.add("hide"); $("threadView").classList.add("hide"); $("loginView").classList.remove("hide");
+}
+
+/* ---- data (paged: Supabase returns max 1000 rows per request) ---- */
+async function fetchAll(retry){
+  let all=[], off=0; const step=1000;
+  for(let i=0;i<10;i++){
+    const r=await fetch(CFG.URL+"/rest/v1/chat_logs?select=*&order=created_at.desc&limit="+step+"&offset="+off,{headers:H()});
+    if(r.status===401){ if(!retry&&await refreshToken()) return fetchAll(true); logout(); return null; }
+    if(!r.ok){ let t=""; try{ t=(await r.text()).slice(0,200); }catch(e){} throw new Error("Could not load data. HTTP "+r.status+": "+t); }
+    const part=await r.json(); all=all.concat(part);
+    if(part.length<step) break; off+=step;
+  }
+  return all;
+}
+async function load(){
+  try{
+    const d=await fetchAll(false); if(!d) return;
+    loadInbox(); loadFeedback(); loadBlocked(); loadExtra();
+    rows=d; $("upd").textContent="Updated "+new Date().toLocaleTimeString("en-GB"); renderAll();
+    banner(rows.length?"":"Connected as "+(email||"admin")+", but the database returned 0 messages. Either nothing has been saved yet, or the “admin read” policy does not match this login email.");
+  }catch(e){ banner(e.message+" — this usually means a missing permission (GRANT) or policy. Run the fix SQL, then press Refresh."); }
+}
+function inRange(rs){
+  const n=parseInt(S.range,10); if(!n) return rs;
+  const from=new Date(); from.setHours(0,0,0,0); from.setDate(from.getDate()-(n-1));
+  return rs.filter(r=>new Date(r.created_at)>=from);
+}
+function groupsOf(rs){
+  const map=new Map();
+  rs.forEach(r=>{ const id=r.chat_id||("single-"+r.id); if(!map.has(id)) map.set(id,{id,user:r.user_id||"?",msgs:[]}); map.get(id).msgs.push(r); });
+  return [...map.values()].map(g=>{ g.msgs.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)); g.email=(g.msgs.find(m=>m.user_email)||{}).user_email||""; const mm=g.msgs.find(m=>m.ip||m.country||m.device)||{}; g.ip=mm.ip||""; g.country=mm.country||""; g.device=mm.device||""; g.tz=mm.tz||"";
+    g.last=g.msgs[g.msgs.length-1].created_at; g.first=g.msgs[0].created_at; return g; });
+}
+
+/* ---- render ---- */
+function renderAll(){ groups=groupsOf(inRange(rows)); renderOverview(); renderChats(); renderUsers(); $("iRows").textContent=rows.length; $("iTime").textContent=new Date().toLocaleTimeString("en-GB"); $("iMail").textContent=email||"–"; }
+
+function renderOverview(){
+  const rs=inRange(rows), today=new Date().toDateString();
+  const tr=rows.filter(r=>new Date(r.created_at).toDateString()===today);
+  $("sChats").textContent=groups.length; $("sMsgs").textContent=rs.length;
+  $("sUsers").textContent=new Set(rs.map(r=>r.user_email||r.user_id)).size; $("sToday").textContent=tr.length;
+  $("sAvg").textContent=groups.length?(rs.length/groups.length).toFixed(1):"0";
+  $("sActive").textContent=new Set(tr.map(r=>r.user_id)).size;
+  const days=[]; for(let i=13;i>=0;i--){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); days.push({d,n:0}); }
+  rows.forEach(r=>{ const x=new Date(r.created_at); x.setHours(0,0,0,0); const f=days.find(o=>o.d.getTime()===x.getTime()); if(f) f.n++; });
+  const mx=Math.max(1,...days.map(o=>o.n)), ch=$("chart"); ch.innerHTML="";
+  days.forEach(o=>{ const c=el("div","col"); c.appendChild(el("span","",o.n||"")); const b=el("i"); b.style.height=Math.round(o.n/mx*85)+"%"; c.appendChild(b); c.appendChild(el("span","",o.d.getDate())); ch.appendChild(c); });
+  const cnt=new Map(); rs.forEach(r=>{ const k=(r.query||"").trim().toLowerCase(); if(k) cnt.set(k,(cnt.get(k)||0)+1); });
+  const tq=$("topQ"); tq.innerHTML=""; const top=[...cnt.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(!top.length) tq.appendChild(el("div","empty","No data in this period."));
+  top.forEach(([q,n])=>{ const r=el("div","row"); r.append(el("span","",q),el("span","",n+"×")); tq.appendChild(r); });
+  const cc=new Map(); groups.forEach(g=>{ const k=cname(g.country)||"Unknown"; cc.set(k,(cc.get(k)||0)+1); });
+  const tc=$("topC"); tc.innerHTML=""; [...cc.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).forEach(([k,n])=>{ const r=el("div","row"); r.append(el("span","",k),el("span","",n+" chats")); tc.appendChild(r); });
+  if(!cc.size) tc.appendChild(el("div","empty","No data in this period."));
+  const lt=$("latest"); lt.innerHTML=""; rs.slice(0,8).forEach(m=>{ const r=el("div","row"); r.style.cursor="pointer"; r.append(el("span","",m.query||""),el("span","",fmt(m.created_at))); r.addEventListener("click",()=>{ const g=groups.find(x=>x.msgs.some(y=>y.id===m.id)); if(g) openThread(g); }); lt.appendChild(r); });
+}
+
+function renderChats(){
+  const q=$("searchBox").value.trim().toLowerCase(), list=$("chatList"); list.innerHTML="";
+  let shown=groups.filter(g=>!q||g.user.toLowerCase().includes(q)||g.email.toLowerCase().includes(q)||nameOf(g.email||g.user).toLowerCase().includes(q)||(g.country+" "+cname(g.country)+" "+g.device+" "+g.ip+" "+g.tz).toLowerCase().includes(q)||g.msgs.some(m=>(m.query||"").toLowerCase().includes(q)||(m.answer||"").toLowerCase().includes(q)));
+  const s=$("sort").value;
+  shown.sort((a,b)=>s==="old"?new Date(a.last)-new Date(b.last):s==="long"?b.msgs.length-a.msgs.length:new Date(b.last)-new Date(a.last));
+  if(!shown.length){ list.appendChild(el("div","empty",rows.length?"No chats match.":"No conversations yet. Ask a question on your site, then press Refresh.")); return; }
+  shown.forEach(g=>{
+    const b=el("button","item"); b.type="button"; b.appendChild(el("div","t",g.msgs[0].query||"(empty)"));
+    const m=el("div","m"); [g.msgs.length+" msg",(nameOf(g.email||g.user)?"★ "+nameOf(g.email||g.user):(g.email||("guest "+g.user.slice(-6)))),cname(g.country),fmt(g.last)].filter(Boolean).forEach(x=>m.appendChild(el("span","",x))); b.appendChild(m);
+    b.addEventListener("click",()=>openThread(g)); list.appendChild(b);
+  });
+}
+
+function renderUsers(){
+  const list=$("userList"); list.innerHTML=""; const map=new Map();
+  groups.forEach(g=>{ const k=g.email||g.user; const u=map.get(k)||{id:k,label:g.email||("Guest "+g.user.slice(-8)),country:g.country,device:g.device,chats:0,msgs:0,last:g.last}; u.chats++; u.msgs+=g.msgs.length; if(new Date(g.last)>new Date(u.last)) u.last=g.last; map.set(k,u); });
+  const us=[...map.values()].sort((a,b)=>new Date(b.last)-new Date(a.last));
+  if(!us.length){ list.appendChild(el("div","empty","No users in this period.")); return; }
+  us.forEach(u=>{ const b=el("div","item"); b.style.cursor="pointer"; b.appendChild(el("div","t",(nameOf(u.id)?"★ "+nameOf(u.id)+" — ":"")+u.label));
+    const m=el("div","m"); [u.chats+" chats",u.msgs+" msgs",cname(u.country),u.device,"last "+fmt(u.last)].filter(Boolean).forEach(x=>m.appendChild(el("span","",x))); b.appendChild(m);
+    const rn=el("button","btn sm gh","✎ Name"); rn.type="button"; rn.style.marginTop="8px"; rn.addEventListener("click",e=>{ e.stopPropagation(); renameUser(u.id,u.label); }); b.appendChild(rn);
+    b.addEventListener("click",()=>{ $("searchBox").value=u.id; showTab("chats"); renderChats(); }); list.appendChild(b); });
+}
+
+function openThread(g){
+  curGroup=g; $("tTitle").textContent=g.msgs[0].query||"(empty)"; $("tMeta").textContent=[(nameOf(g.email||g.user)?"★ "+nameOf(g.email||g.user)+" · ":"")+(g.email||("guest "+g.user)),g.msgs.length+" messages",cname(g.country),g.device,g.tz,g.ip?("IP "+g.ip):"",fmt(g.first)].filter(Boolean).join(" · ");
+  const box=$("tMsgs"); box.innerHTML="";
+  g.msgs.forEach(m=>[["u","User",m.query],["a","Suggo AI",m.answer]].forEach(([c,w,t])=>{ const d=el("div","bub "+c); d.appendChild(el("small","",w+" · "+fmt(m.created_at))); d.appendChild(el("span","",t||"")); box.appendChild(d); }));
+  $("threadView").classList.remove("hide"); $("threadView").scrollTop=0;
+}
+
+/* ---- actions ---- */
+let feedback=[], blocked=[];
+async function loadFeedback(){
+  try{ const r=await fetch(CFG.URL+"/rest/v1/feedback?select=*&order=created_at.desc&limit=300",{headers:H()}); feedback=r.ok?await r.json():[]; if(!Array.isArray(feedback)) feedback=[]; }catch(e){ feedback=[]; }
+  renderFeedback();
+}
+function renderFeedback(){
+  const f=$("fbFilter").value, l=$("fbList"); l.innerHTML="";
+  $("fbStats").textContent="👍 "+feedback.filter(x=>x.rating>0).length+"    👎 "+feedback.filter(x=>x.rating<0).length;
+  const shown=feedback.filter(x=>f==="all"||(f==="up"&&x.rating>0)||(f==="down"&&x.rating<0));
+  if(!shown.length){ l.appendChild(el("div","empty","No feedback yet. (If you expected some, run the Feedback SQL first.)")); return; }
+  shown.forEach(m=>{
+    const b=el("div","item"); b.style.cursor="pointer";
+    b.appendChild(el("div","t",(m.rating>0?"👍 ":"👎 ")+(m.query||"")));
+    const meta=el("div","m"); [m.user_email||"Guest",cname(m.country),m.device,fmt(m.created_at)].filter(Boolean).forEach(x=>meta.appendChild(el("span","",x))); b.appendChild(meta);
+    const full=el("div","bub a",m.answer||""); full.style.display="none"; full.style.marginRight="0";
+    const del=el("button","btn sm dg","Delete"); del.type="button"; del.style.display="none";
+    del.addEventListener("click",async e=>{ e.stopPropagation(); if(!confirm("Delete this feedback?")) return;
+      const r=await fetch(CFG.URL+"/rest/v1/feedback?id=eq."+m.id,{method:"DELETE",headers:{...H(),Prefer:"return=representation"}});
+      const d=r.ok?await r.json():[]; if(d.length){ feedback=feedback.filter(x=>x.id!==m.id); renderFeedback(); } else toast("Delete failed."); });
+    b.append(full,del);
+    b.addEventListener("click",()=>{ const o=full.style.display==="none"; full.style.display=o?"block":"none"; del.style.display=o?"inline-block":"none"; });
+    l.appendChild(b);
+  });
+}
+async function loadBlocked(){
+  try{ const r=await fetch(CFG.URL+"/rest/v1/blocked_users?select=*&order=created_at.desc",{headers:H()}); blocked=r.ok?await r.json():[]; if(!Array.isArray(blocked)) blocked=[]; }catch(e){ blocked=[]; }
+  renderBlocked();
+}
+function renderBlocked(){
+  const l=$("blockList"); l.innerHTML="";
+  if(!blocked.length){ l.appendChild(el("div","empty","Nobody is blocked.")); return; }
+  blocked.forEach(b=>{ const r=el("div","row"); r.appendChild(el("span","",b.k));
+    const u=el("button","btn sm gh","Unblock"); u.type="button";
+    u.addEventListener("click",async()=>{ await fetch(CFG.URL+"/rest/v1/blocked_users?k=eq."+encodeURIComponent(b.k),{method:"DELETE",headers:H()}); loadBlocked(); toast("Unblocked."); });
+    r.appendChild(u); l.appendChild(r); });
+}
+async function blockKey(k){
+  if(!k) return;
+  const r=await fetch(CFG.URL+"/rest/v1/blocked_users",{method:"POST",headers:{...H(),Prefer:"return=minimal"},body:JSON.stringify({k:k,note:"blocked from admin"})});
+  if(r.ok||r.status===409){ toast("Blocked: "+k); loadBlocked(); } else toast("Block failed ("+r.status+"). Run the new SQL first.");
+}
+$("fbFilter").addEventListener("change",renderFeedback);
+$("blockBtn").addEventListener("click",()=>{ if(!curGroup) return; const k=curGroup.email||curGroup.user; if(confirm("Block "+k+" from using the AI?")) blockKey(k); });
+$("blockAdd").addEventListener("click",()=>{ const v=$("blockInput").value.trim().toLowerCase(); if(v){ blockKey(v); $("blockInput").value=""; } });
+
+async function loadExtra(){
+  try{
+    const r=await fetch(CFG.URL+"/rest/v1/app_settings?select=key,value&key=in.(ai_extra,ai_models,ai_models_code,ai_fallbacks,user_aliases,ai_people,limit_guest,limit_user,maintenance,ai_speed)",{headers:H()});
+    if(r.ok){ const d=await r.json(); const m={}; d.forEach(x=>{ m[x.key]=x.value||""; });
+      $("aiExtra").value=m.ai_extra||""; $("aiModels").value=m.ai_models||""; $("aiModelsCode").value=m.ai_models_code||""; $("aiFallbacks").value=m.ai_fallbacks||""; afterExtra(m); loadProvs(); }
+  }catch(e){}
+}
+$("aiExtraSave").addEventListener("click",async()=>{
+  try{
+    const rows=[{key:"ai_extra",value:$("aiExtra").value.slice(0,4000)},{key:"ai_models",value:$("aiModels").value.trim().slice(0,400)},{key:"ai_models_code",value:$("aiModelsCode").value.trim().slice(0,400)},{key:"ai_fallbacks",value:$("aiFallbacks").value.trim().slice(0,600)}];
+    const r=await fetch(CFG.URL+"/rest/v1/app_settings?on_conflict=key",{method:"POST",headers:{...H(),Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(rows)});
+    toast(r.ok?"Saved. The AI uses it within a minute.":"Save failed ("+r.status+"). Run the new SQL first.");
+  }catch(e){ toast("Save failed."); }
+});
+
+/* ---- owner controls: user names, limits, special people, SQL console ---- */
+let aliases={}, people={};
+const nameOf = k => aliases[String(k||"").toLowerCase()]||"";
+async function saveKeys(arr){
+  try{ const r=await fetch(CFG.URL+"/rest/v1/app_settings?on_conflict=key",{method:"POST",headers:{...H(),Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(arr)}); return r.ok; }
+  catch(e){ return false; }
+}
+function afterExtra(m){
+  try{ aliases=JSON.parse(m.user_aliases||"{}")||{}; }catch(e){ aliases={}; }
+  try{ people=JSON.parse(m.ai_people||"{}")||{}; }catch(e){ people={}; }
+  $("limGuest").value=m.limit_guest||""; $("limUser").value=m.limit_user||""; $("maint").value=m.maintenance||""; $("aiSpeed").value=m.ai_speed||"fast";
+  renderAliases(); renderPeople(); if(rows.length) renderAll();
+}
+function renderAliases(){
+  const l=$("aliasList"); l.innerHTML=""; const ks=Object.keys(aliases);
+  if(!ks.length){ l.appendChild(el("div","empty","No names saved yet.")); return; }
+  ks.sort().forEach(k=>{ const r=el("div","row"); r.appendChild(el("span","",k+"  →  "+aliases[k]));
+    const b=el("button","btn sm gh","Remove"); b.type="button";
+    b.addEventListener("click",async()=>{ delete aliases[k]; await saveAliases(); }); r.appendChild(b); l.appendChild(r); });
+}
+async function saveAliases(){
+  const ok=await saveKeys([{key:"user_aliases",value:JSON.stringify(aliases)}]);
+  toast(ok?"Saved.":"Save failed. Check the app_settings write policy.");
+  renderAliases(); renderAll();
+}
+function renameUser(k,label){
+  const n=prompt("Name to remember for "+label+"\n(leave empty to remove the name)",nameOf(k)); if(n===null) return;
+  const v=n.trim().slice(0,60), key=String(k).toLowerCase();
+  if(v) aliases[key]=v; else delete aliases[key];
+  saveAliases();
+}
+$("aliasAdd").addEventListener("click",()=>{
+  const k=$("aliasKey").value.trim().toLowerCase(), v=$("aliasName").value.trim().slice(0,60);
+  if(!k||!v){ toast("Fill both boxes."); return; }
+  aliases[k]=v; $("aliasKey").value=""; $("aliasName").value=""; saveAliases();
+});
+$("nameBtn").addEventListener("click",()=>{ if(curGroup) renameUser(curGroup.email||curGroup.user,curGroup.email||("guest "+curGroup.user)); });
+
+function renderPeople(){
+  const l=$("peopleList"); l.innerHTML=""; const ks=Object.keys(people);
+  if(!ks.length){ l.appendChild(el("div","empty","No people added here yet. (People written in the code still work.)")); return; }
+  ks.sort().forEach(k=>{ const r=el("div","row"); r.appendChild(el("span","",k+" — "+String(people[k]).slice(0,60)));
+    const box=el("span"); box.style.display="flex"; box.style.gap="6px";
+    const e=el("button","btn sm gh","Edit"); e.type="button"; e.addEventListener("click",()=>{ $("peopleEmail").value=k; $("peopleText").value=people[k]; $("peopleText").focus(); });
+    const d=el("button","btn sm gh","Remove"); d.type="button"; d.addEventListener("click",async()=>{ delete people[k]; await savePeople(); });
+    box.append(e,d); r.appendChild(box); l.appendChild(r); });
+}
+async function savePeople(){
+  const ok=await saveKeys([{key:"ai_people",value:JSON.stringify(people)}]);
+  toast(ok?"Saved. The AI uses it within a minute.":"Save failed. Check the app_settings write policy.");
+  renderPeople();
+}
+$("peopleAdd").addEventListener("click",async()=>{
+  const k=$("peopleEmail").value.trim().toLowerCase(), v=$("peopleText").value.trim().slice(0,1500);
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(k)||!v){ toast("Write a valid email and the instructions."); return; }
+  people[k]=v; $("peopleEmail").value=""; $("peopleText").value=""; await savePeople();
+});
+
+$("limSave").addEventListener("click",async()=>{
+  const g=parseInt($("limGuest").value,10), u=parseInt($("limUser").value,10);
+  const ok=await saveKeys([{key:"limit_guest",value:g>0?String(g):""},{key:"limit_user",value:u>0?String(u):""},{key:"maintenance",value:$("maint").value.trim().slice(0,500)},{key:"ai_speed",value:$("aiSpeed").value}]);
+  toast(ok?"Saved. Applies within a minute.":"Save failed. Check the app_settings write policy.");
+});
+
+const SQL_PRESETS={
+  tables:"select relname as table_name, n_live_tup as approx_rows from pg_stat_user_tables order by 1;",
+  columns:"select table_name, column_name, data_type from information_schema.columns where table_schema='public' order by table_name, ordinal_position;",
+  triggers:"select event_object_table as table_name, trigger_name, action_statement from information_schema.triggers where trigger_schema='public' order by 1;",
+  policies:"select tablename, policyname, cmd, roles, qual from pg_policies where schemaname='public' order by tablename;"
+};
+$("sqlPreset").addEventListener("change",e=>{ if(SQL_PRESETS[e.target.value]) $("sqlBox").value=SQL_PRESETS[e.target.value]; e.target.value=""; });
+function showSqlResult(d){
+  const out=$("sqlOut"); out.innerHTML="";
+  if(!d.ok){ const e=el("div","err",d.error||"Failed"); e.style.whiteSpace="pre-wrap"; out.appendChild(e); return; }
+  out.appendChild(el("div","hint",(d.dry?"TEST ONLY (undone) · ":"")+(d.command||"OK")+" · "+(d.rowCount!=null?d.rowCount+" row(s)":"")+" · "+d.ms+" ms"+(d.truncated?" · showing the first "+d.rows.length:"")));
+  if(d.columns&&d.columns.length){
+    const wrap=el("div"); wrap.style.overflowX="auto"; const t=el("table","tbl"); const hr=el("tr");
+    d.columns.forEach(c=>hr.appendChild(el("th","",c))); t.appendChild(hr);
+    d.rows.forEach(r=>{ const tr=el("tr"); r.forEach(v=>tr.appendChild(el("td","",v===null?"null":(typeof v==="object"?JSON.stringify(v):String(v))))); t.appendChild(tr); });
+    wrap.appendChild(t); out.appendChild(wrap);
+  }
+}
+async function runSql(retry){
+  const sql=$("sqlBox").value.trim(); if(!sql){ toast("Write some SQL first."); return; }
+  const dry=$("sqlDry").checked;
+  if(!retry && !dry){
+    const bad=/\b(drop|truncate)\b/i.test(sql)||(/\b(delete|update)\b/i.test(sql)&&!/\bwhere\b/i.test(sql));
+    const write=/\b(insert|update|delete|alter|create|grant|revoke|drop|truncate)\b/i.test(sql);
+    if(bad){ if(prompt("This can remove or change a lot of data and cannot be undone. Type RUN to continue.")!=="RUN") return; }
+    else if(write && !confirm("Run this SQL on your live database?")) return;
+  }
+  const btn=$("sqlRun"); btn.disabled=true; btn.textContent="Running…";
+  try{
+    const r=await fetch(CFG.URL+"/functions/v1/admin-sql",{method:"POST",headers:H(),body:JSON.stringify({sql:sql,dry:dry})});
+    if(r.status===401 && !retry && await refreshToken()){ btn.disabled=false; btn.textContent="Run SQL"; return runSql(true); }
+    let d=null; try{ d=await r.json(); }catch(e){}
+    if(!d) d={ok:false,error:r.status===404?"The admin-sql function is not deployed yet.":("HTTP "+r.status)};
+    else if(d.ok===undefined) d={ok:false,error:d.message||d.error||("HTTP "+r.status)};
+    showSqlResult(d);
+  }catch(e){ showSqlResult({ok:false,error:"Could not reach the function: "+e.message}); }
+  btn.disabled=false; btn.textContent="Run SQL";
+}
+$("sqlRun").addEventListener("click",()=>runSql(false));
+
+/* ---- AI providers: API keys stay on the server ---- */
+let provEditId=null;
+const PROV_PRESETS={openai:["OpenAI","https://api.openai.com/v1"],groq:["Groq","https://api.groq.com/openai/v1"],openrouter:["OpenRouter","https://openrouter.ai/api/v1"],deepseek:["DeepSeek","https://api.deepseek.com/v1"],mistral:["Mistral","https://api.mistral.ai/v1"],together:["Together","https://api.together.xyz/v1"],xai:["xAI","https://api.x.ai/v1"],geminiCompat:["Gemini (extra key)","https://generativelanguage.googleapis.com/v1beta/openai"]};
+async function adminAi(action,data,retry){
+  try{
+    const r=await fetch(CFG.URL+"/functions/v1/admin-ai",{method:"POST",headers:H(),body:JSON.stringify({...data,action:action})});
+    if(r.status===401 && !retry && await refreshToken()) return adminAi(action,data,true);
+    let d=null; try{ d=await r.json(); }catch(e){}
+    if(!d) return {ok:false,error:r.status===404?"The admin-ai function is not deployed yet.":"HTTP "+r.status};
+    if(d.ok===undefined) return {ok:false,error:d.message||d.error||"HTTP "+r.status};
+    return d;
+  }catch(e){ return {ok:false,error:"Could not reach the function: "+e.message}; }
+}
+function provStatus(t){ $("provStatus").textContent=t||""; }
+function provClear(){ provEditId=null; ["provName","provUrl","provModel","provKey"].forEach(i=>$(i).value=""); $("provMode").value="backup"; $("provSave").textContent="Save provider"; }
+async function loadProvs(){
+  const l=$("provList"); const d=await adminAi("list",{});
+  l.innerHTML="";
+  if(!d.ok){ provStatus(d.error); l.appendChild(el("div","empty","Could not load the list.")); return; }
+  provStatus("");
+  if(!d.items.length){ l.appendChild(el("div","empty","No extra AI added yet. Gemini is used.")); return; }
+  const MODE={main:"Main",backup:"Backup",off:"Off"};
+  d.items.forEach(p=>{
+    const it=el("div","item"); it.appendChild(el("div","t",p.name+" · "+p.model));
+    it.appendChild(el("div","m",[MODE[p.mode]||p.mode,p.base_url,"key ••••"+p.tail].join("  ·  ")));
+    const box=el("div"); box.style.cssText="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap";
+    const tb=el("button","btn sm gh","Test"); tb.type="button";
+    tb.addEventListener("click",async()=>{ provStatus("Testing "+p.name+"…"); const r=await adminAi("test",{id:p.id}); provStatus(r.ok?(p.name+" works"+(r.reply?": "+r.reply:"")+" ("+r.ms+" ms)"):(p.name+" failed: "+r.error)); });
+    const eb=el("button","btn sm gh","Edit"); eb.type="button";
+    eb.addEventListener("click",()=>{ provEditId=p.id; $("provName").value=p.name; $("provUrl").value=p.base_url; $("provModel").value=p.model; $("provMode").value=p.mode; $("provKey").value=""; $("provSave").textContent="Update provider"; $("provName").focus(); });
+    const db=el("button","btn sm gh","Delete"); db.type="button";
+    db.addEventListener("click",async()=>{ if(!confirm("Delete "+p.name+" and its saved key?")) return; const r=await adminAi("delete",{id:p.id}); toast(r.ok?"Deleted.":r.error); loadProvs(); });
+    box.append(tb,eb,db); it.appendChild(box); l.appendChild(it);
+  });
+}
+$("provPreset").addEventListener("change",e=>{ const p=PROV_PRESETS[e.target.value]; if(p){ $("provName").value=p[0]; $("provUrl").value=p[1]; $("provModel").focus(); } e.target.value=""; });
+$("provClear").addEventListener("click",provClear);
+$("provSave").addEventListener("click",async()=>{
+  const btn=$("provSave"); btn.disabled=true;
+  const r=await adminAi("save",{id:provEditId,name:$("provName").value,base_url:$("provUrl").value,model:$("provModel").value,api_key:$("provKey").value,mode:$("provMode").value});
+  btn.disabled=false;
+  if(!r.ok){ provStatus(r.error); return; }
+  toast("Saved. The site uses it within a minute."); provClear(); loadProvs();
+});
+
+let inbox=[];
+async function loadInbox(){
+  try{
+    const r=await fetch(CFG.URL+"/rest/v1/owner_messages?select=*&order=created_at.desc&limit=200",{headers:H()});
+    inbox=r.ok?await r.json():[]; if(!Array.isArray(inbox)) inbox=[];
+  }catch(e){ inbox=[]; }
+  renderInbox();
+}
+function renderInbox(){
+  const l=$("inboxList"); l.innerHTML="";
+  const un=inbox.filter(m=>!m.is_read).length; $("inboxBadge").textContent=un?("("+un+")"):"";
+  if(!inbox.length){ l.appendChild(el("div","empty","No messages yet. (If you expected some, run the Inbox SQL first.)")); return; }
+  inbox.forEach(m=>{
+    const b=el("div","item"); b.style.cursor="pointer";
+    const t=el("div","t",(m.is_read?"":"● ")+(m.message||"").slice(0,90));
+    const meta=el("div","m");
+    [m.sender_email?((m.sender_name?m.sender_name+" · ":"")+m.sender_email+" ✓"):(m.sender_name||"Guest"),m.contact?("contact: "+m.contact):"",cname(m.country),fmt(m.created_at)].filter(Boolean).forEach(x=>meta.appendChild(el("span","",x)));
+    const full=el("div","bub u",m.message||""); full.style.display="none"; full.style.marginLeft="0";
+    const del=el("button","btn sm dg","Delete"); del.style.display="none"; del.type="button";
+    b.append(t,meta,full,del);
+    del.addEventListener("click",async e=>{
+      e.stopPropagation(); if(!confirm("Delete this message?")) return;
+      const r=await fetch(CFG.URL+"/rest/v1/owner_messages?id=eq."+m.id,{method:"DELETE",headers:{...H(),Prefer:"return=representation"}});
+      const d=r.ok?await r.json():[]; if(d.length){ inbox=inbox.filter(x=>x.id!==m.id); renderInbox(); toast("Deleted."); } else toast("Delete failed. Run the Inbox SQL first.");
+    });
+    b.addEventListener("click",async()=>{
+      const open=full.style.display==="none";
+      full.style.display=open?"block":"none"; del.style.display=open?"inline-block":"none"; t.style.whiteSpace=open?"normal":"nowrap";
+      if(open&&!m.is_read){ m.is_read=true; t.textContent=(m.message||"").slice(0,90);
+        $("inboxBadge").textContent=inbox.filter(x=>!x.is_read).length?("("+inbox.filter(x=>!x.is_read).length+")"):"";
+        fetch(CFG.URL+"/rest/v1/owner_messages?id=eq."+m.id,{method:"PATCH",headers:H(),body:JSON.stringify({is_read:true})}).catch(()=>{}); }
+    });
+    l.appendChild(b);
+  });
+}
+function showTab(t){
+  S.tab=t; saveS();
+  ["overview","chats","users","inbox","feedback","settings"].forEach(x=>$("p-"+x).classList.toggle("hide",x!==t));
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  $("rangeBar").classList.toggle("hide",t==="settings"||t==="inbox"||t==="feedback");
+}
+async function del(filter,label){
+  if(!confirm(label)) return false;
+  const r=await fetch(CFG.URL+"/rest/v1/chat_logs?"+filter,{method:"DELETE",headers:{...H(),Prefer:"return=representation"}});
+  if(!r.ok){ toast("Delete failed ("+r.status+")"); return false; }
+  const d=await r.json();
+  if(!d.length){ toast("Nothing deleted. Run the “admin delete” SQL policy first."); return false; }
+  toast(d.length+" message(s) deleted."); return true;
+}
+function download(name,type,text){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); }
+function csvCell(v){ return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'; }
+
+$("loginBtn").addEventListener("click",async()=>{
+  $("loginErr").textContent="";
+  if(CFG.KEY.startsWith("PASTE")){ $("loginErr").textContent="Paste your anon key in admin.html first."; return; }
+  try{ email=$("email").value.trim(); await authCall("password",{email,password:$("pass").value}); $("pass").value=""; start(); }
+  catch(e){ $("loginErr").textContent=e.message; }
+});
+$("pass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("loginBtn").click(); });
+$("refreshBtn").addEventListener("click",()=>{ load(); toast("Refreshing…"); });
+$("logoutBtn").addEventListener("click",logout);
+$("backBtn").addEventListener("click",()=>$("threadView").classList.add("hide"));
+$("tabs").addEventListener("click",e=>{ const t=e.target.closest(".tab"); if(t) showTab(t.dataset.t); });
+$("range").addEventListener("change",e=>{ S.range=e.target.value; saveS(); renderAll(); });
+$("searchBox").addEventListener("input",renderChats);
+$("sort").addEventListener("change",renderChats);
+$("setTheme").addEventListener("change",e=>{ S.theme=e.target.value; saveS(); applyTheme(); });
+$("setAuto").addEventListener("change",e=>{ S.auto=e.target.value; saveS(); setTimer(); });
+$("copyBtn").addEventListener("click",async()=>{
+  if(!curGroup) return;
+  const t=curGroup.msgs.map(m=>"User: "+(m.query||"")+"\nAI: "+(m.answer||"")).join("\n\n");
+  try{ await navigator.clipboard.writeText(t); toast("Conversation copied."); }catch(e){ toast("Copy not allowed here."); }
+});
+$("delBtn").addEventListener("click",async()=>{
+  if(!curGroup) return;
+  const g=curGroup, f=g.id.startsWith("single-")?"id=eq."+g.msgs[0].id:"chat_id=eq."+encodeURIComponent(g.id);
+  if(await del(f,"Delete this whole conversation?")){ $("threadView").classList.add("hide"); load(); }
+});
+$("delAll").addEventListener("click",async()=>{
+  if(prompt('Type DELETE to remove ALL logs permanently.')!=="DELETE") return;
+  if(await del("id=gt.0","Really delete every stored message?")) load();
+});
+$("expCsv").addEventListener("click",()=>{
+  const lines=[["time","chat_id","user_id","email","country","ip","device","question","answer"].join(",")];
+  rows.forEach(r=>lines.push([r.created_at,r.chat_id,r.user_id,r.user_email,r.country,r.ip,r.device,r.query,r.answer].map(csvCell).join(",")));
+  download("suggo-chat-logs.csv","text/csv;charset=utf-8","\ufeff"+lines.join("\n"));
+});
+$("expJson").addEventListener("click",()=>download("suggo-chat-logs.json","application/json",JSON.stringify(rows,null,2)));
+
+function setTimer(){ clearInterval(timer); const n=parseInt(S.auto,10); if(n) timer=setInterval(()=>{ if($("threadView").classList.contains("hide")) load(); },n*1000); }
+function start(){
+  $("loginView").classList.add("hide"); $("appView").classList.remove("hide");
+  $("range").value=S.range; $("setTheme").value=S.theme; $("setAuto").value=S.auto;
+  showTab(S.tab); setTimer(); load();
+}
+applyTheme();
+try{ email=sessionStorage.getItem("suggoAdminMail")||""; }catch(e){}
+if(session) start();
+</script>
+</body>
+</html>
